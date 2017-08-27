@@ -115,4 +115,19 @@ class BookmarksController extends AppController
 
         return $this->redirect(['action' => 'index']);
     }
+
+
+    public function tags() {
+        // 'pass' key provided by cake contains all passed url segments
+	$tags = $this->request->getParam('pass');
+
+        $bookmarks = $this->Bookmarks->find('tagged', [
+		   'tags' => $tags
+		 ]);
+
+	$this->set([
+		'bookmarks' => $bookmarks,
+		'tags' => $tags
+		]);
+    }
 }
