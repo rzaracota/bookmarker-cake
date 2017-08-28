@@ -21,8 +21,11 @@ class BookmarksController extends AppController
     public function index()
     {
         $this->paginate = [
-            'contain' => ['Users']
+            'conditions' => [
+              'Bookmarks.user_id' => $this->Auth->user('id'),
+              ]
         ];
+
         $bookmarks = $this->paginate($this->Bookmarks);
 
         $this->set(compact('bookmarks'));
@@ -56,6 +59,8 @@ class BookmarksController extends AppController
         $bookmark = $this->Bookmarks->newEntity();
         if ($this->request->is('post')) {
             $bookmark = $this->Bookmarks->patchEntity($bookmark, $this->request->getData());
+            $bookmark->user_id = $this->Auth->user('id');
+
             if ($this->Bookmarks->save($bookmark)) {
                 $this->Flash->success(__('The bookmark has been saved.'));
 
@@ -83,6 +88,8 @@ class BookmarksController extends AppController
         ]);
         if ($this->request->is(['patch', 'post', 'put'])) {
             $bookmark = $this->Bookmarks->patchEntity($bookmark, $this->request->getData());
+            $bookmark->user_id = $this->Auth->user('id');
+
             if ($this->Bookmarks->save($bookmark)) {
                 $this->Flash->success(__('The bookmark has been saved.'));
 
@@ -118,16 +125,37 @@ class BookmarksController extends AppController
 
 
     public function tags() {
-        // 'pass' key provided by cake contains all passed url segments
-	$tags = $this->request->getParam('pass');
+      // 'pass' key provided by cake contains all passed url segments
+      $tags = $this->request->getParam('pass');
 
-        $bookmarks = $this->Bookmarks->find('tagged', [
-		   'tags' => $tags
-		 ]);
+      $bookmarks = $this->Bookmarks->find('tagged', [
+                    'tags' => $tags
+                    ]);
 
-	$this->set([
-		'bookmarks' => $bookmarks,
-		'tags' => $tags
-		]);
+      $this->set([
+          'bookmarks' => $bookmarks,
+          'tags' => $tags
+        ]);
+    }
+
+    public function isAuthorized($user) {
+      $action = $this->request->getParam('action');
+
+      if (in_array($action, ['index', 'add', 'tags'])) {
+        return true;
+      }
+
+      if (!$this->request->getParam('pass.0')) {
+        return false;
+      }
+
+      $id = $this->request->getParam('pass.0');
+      $bookmark = $this->Bookmarks->get($id);
+
+      if ($bookmark->user_id == $user['id']) {
+        return true;
+      }
+
+      return parent::isAuthorized($user);
     }
 }
